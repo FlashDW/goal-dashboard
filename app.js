@@ -242,9 +242,8 @@ function renderTried() {
 
 // Where the chat server lives (api/chat.js, deployed on Vercel). On the Vercel
 // site itself, or with `vercel dev` on your computer, it's just "/api/chat".
-// For the GitHub Pages site, paste your Vercel address here, like
-// "https://goal-dashboard-asher.vercel.app/api/chat".
-const CHAT_API_URL = "";
+// The GitHub Pages site uses the Vercel project's main address below.
+const CHAT_API_URL = "https://goal-dashboard-one.vercel.app/api/chat";
 
 function chatEndpoint() {
   const host = location.hostname;
