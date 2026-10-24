@@ -4,7 +4,7 @@ Notes for Claude Code when working in this repo.
 
 ## Project
 
-A goal-tracking dashboard. The tech stack hasn't been chosen yet; update this file once it is.
+A goal-tracking dashboard. v1 is a static mockup in plain HTML, CSS and JavaScript (no framework, no build step): `index.html`, `style.css`, `app.js`, with all content in `data.json`. See README.md for how to run it locally.
 
 ## Environment
 

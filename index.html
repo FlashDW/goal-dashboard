@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asher's goals</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="page-header">
+    <h1>Asher's goals</h1>
+    <p class="subtitle">Mockup with sample data. Changes you make here reset when you reload.</p>
+  </header>
+
+  <main>
+    <section id="next-up" aria-labelledby="next-title">
+      <h2 id="next-title">Next up</h2>
+      <p class="hint">Bored? Start at the top.</p>
+      <ol id="next-list" class="next-list"></ol>
+    </section>
+
+    <section aria-labelledby="goals-title">
+      <h2 id="goals-title">Goals</h2>
+      <div id="goal-cards" class="cards"></div>
+    </section>
+
+    <section aria-labelledby="log-title">
+      <h2 id="log-title">Log</h2>
+      <ul id="log-list" class="log-list"></ul>
+    </section>
+
+    <section aria-labelledby="tried-title">
+      <h2 id="tried-title">Tried</h2>
+      <ul id="tried-list" class="tried-list"></ul>
+    </section>
+  </main>
+
+  <dialog id="chat" class="chat">
+    <div class="chat-head">
+      <div>
+        <h2 id="chat-title">Talk it through</h2>
+        <p class="hint" id="chat-note"></p>
+      </div>
+      <button type="button" class="icon-btn" id="chat-close" aria-label="Close chat">✕</button>
+    </div>
+    <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
