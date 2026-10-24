@@ -1,90 +1,81 @@
 # goal-dashboard
 
-A one-page dashboard for my personal goals: what to do next, where each goal
-stands, a log of what I've done, and a list of things I've tried.
+A goals app you talk to. Make an account with a name and password, then chat
+with an AI that keeps your goals and todos for you: "add a todo for getting
+groceries", "I want to run a 5K by June", "I finished my essay". Your goals and
+todos sit next to the chat, and they're saved in a database, so they're still
+there when you reload or log in from another device. Everyone who signs up gets
+their own private list.
 
 ## How it's built
 
-Plain HTML, CSS and JavaScript, no framework and no build step, plus one small
-server file for the AI chat.
+Plain HTML, CSS and JavaScript in the browser, no framework and no build step,
+plus a few small server files that run on Vercel.
 
 | File | What it does |
 | --- | --- |
-| `index.html` | The page skeleton: Next up, Goals, Log, Tried, and the chat window |
+| `index.html` | The page: the log-in box, and the chat with your Todos and Goals beside it |
 | `style.css` | How it looks, including phone layout and dark mode |
-| `app.js` | Reads `data.json` and draws everything |
-| `data.json` | All the content. To update the dashboard, edit this file and nothing else |
-| `api/chat.js` | The chat's server piece: it passes your messages to Claude and keeps the API key secret |
-| `package.json` | Tells Vercel to install the Anthropic library that `api/chat.js` uses |
+| `app.js` | Logs you in, sends chat messages, and draws your lists |
+| `api/signup.js`, `api/login.js`, `api/logout.js` | Making an account, logging in and out |
+| `api/me.js` | Sends the page your goals, todos and recent chat when it opens |
+| `api/chat.js` | Passes your message to Claude, which can add and change your goals and todos |
+| `api/todo.js` | Ticking or deleting a todo straight from the list |
+| `lib/db.js` | The database connection, and the tables (it creates them itself the first time) |
+| `lib/auth.js` | Password hashing and sign-in tokens |
+| `lib/chat.js` | The tools Claude uses to change goals and todos |
+| `package.json` | Tells Vercel to install the two libraries the server uses |
 
-Ticking tasks, reordering Next up and accepting chat suggestions all work, but
-only until you reload the page.
+### How it keeps things safe
 
-## Real AI chat
+- **Passwords** are never stored. The database keeps a scrambled version (a
+  scrypt hash) that can check a password but can't be turned back into one.
+- **Your list is yours.** Every database query is limited to the logged-in
+  person. The AI's tools get the user from the login, never from the AI, so
+  even if someone tricks the AI it can only touch their own list.
+- **Strangers can't run up the bill.** Making an account needs an invite code
+  (the `CHAT_PASSCODE` setting), and each person can send at most 60 chat
+  messages a day (change it with `DAILY_MESSAGE_LIMIT`).
+- **Guessing passwords** is slowed down: after 10 wrong tries an account waits
+  15 minutes.
+- The API key and database password live only in Vercel's settings, never in
+  this repo or the page.
 
-"Talk it through" sends your messages, plus what's on the dashboard right now,
-to Claude (model `claude-haiku-5-5`, which costs about a twentieth of a cent
-per message, so $5 of credit lasts thousands of chats). Claude answers and can suggest a change
-(a new Next up task, a new target date, a new target number) that you Accept,
-Edit or Skip.
+## Setup (needs a parent for the accounts)
 
-The API key can't go in `app.js`: the site is public, and anyone can read a
-page's JavaScript. So the key lives on a small server, `api/chat.js`, which runs
-on Vercel for free. The page talks to that server, and only the server talks to
-Claude.
+The AI part (steps 1 to 3) is already done if the old chat worked.
 
-### One-time setup (needs a parent for the accounts)
-
-1. **Get an API key.** At https://console.anthropic.com create an API key and
-   add some credit. Under Limits, set a low monthly spend limit (like $10) so
-   a mistake can't run up a bill. Keep the key private: don't paste it into
-   a chat, a file in this repo, or a message.
-2. **Put the server on Vercel.** At https://vercel.com sign in with GitHub,
-   choose Add New > Project, and import `goal-dashboard`. Leave the settings
-   as they are.
-3. **Add the secrets.** In the Vercel project go to Settings > Environment
-   Variables and add:
+1. **API key.** At https://console.anthropic.com create an API key and add some
+   credit. Under Limits, set a low monthly spend limit (like $10). Keep the key
+   private: don't paste it into a chat, a file in this repo, or a message.
+2. **Vercel.** At https://vercel.com sign in with GitHub, choose Add New >
+   Project, and import `goal-dashboard`.
+3. **Secrets.** In the Vercel project go to Settings > Environment Variables
+   and add:
    - `ANTHROPIC_API_KEY`: the key from step 1.
-   - `CHAT_PASSCODE`: any passcode you make up. The chat asks for it once per
-     browser, so strangers who find the server can't use your credit.
+   - `CHAT_PASSCODE`: the invite code people type when they make an account.
+     Share it only with people you want using the app.
    - `ALLOWED_ORIGIN` (only if the site isn't at https://flashdw.github.io):
-     the address of the site that may use the chat.
+     the address of the site that may use the server.
+4. **Database.** In the Vercel project open the **Storage** tab, choose
+   **Create Database**, pick **Neon** (Serverless Postgres), keep the free plan,
+   and connect it to this project for all environments. Vercel adds the
+   `DATABASE_URL` setting by itself. The tables are created automatically the
+   first time someone uses the app.
+5. **Redeploy.** Open Deployments and Redeploy so the server picks up the new
+   settings.
 
-   Then open Deployments and Redeploy so the server picks them up.
-4. **Connect the GitHub Pages site.** `CHAT_API_URL` in `app.js` points at the
-   Vercel project's main address (from Domains on the project page, not a
-   single deploy's long address): https://goal-dashboard-one.vercel.app . That
-   address also shows the whole dashboard with the chat working, so you can
-   use either one.
+`SERVER_URL` in `app.js` points at the Vercel project's main address,
+https://goal-dashboard-one.vercel.app , which the GitHub Pages site uses. That
+address also shows the whole app, so you can use either one.
 
-### Trying the chat on your computer
+## Run it on your computer
 
-`python -m http.server` only serves files, so the chat can't reach a server
-there. To run the server too, install Node.js and the Vercel command line tool
-(`npm i -g vercel`), run `vercel link` once, then `vercel env pull` (this copies
-the secrets into a local `.env.local`, which git ignores) and `vercel dev`.
-Open the address it prints.
+The app needs its server, so `python -m http.server` isn't enough any more.
+Install Node.js and the Vercel command line tool (`npm i -g vercel`), run
+`vercel link` once, then `vercel env pull` (this copies the settings into a
+local `.env.local`, which git ignores) and `vercel dev`. Open the address it
+prints. Note this uses the same database as the live site.
 
-### Run it on your computer
-
-Browsers won't let a page opened straight from a file read `data.json`, so start
-a tiny local web server in this folder (PowerShell or Git Bash):
-
-```
-python -m http.server 8000
-```
-
-Then open http://localhost:8000. Press Ctrl+C in the terminal to stop it.
 To check the phone layout, open the browser's dev tools (F12) and turn on the
 device toolbar (Ctrl+Shift+M).
-
-### Editing data.json
-
-- `goals`: one or more per area. Leave out `target` for a goal with no progress
-  bar. `due` can be a date (`2027-01-03`), words
-  (`Every week`), or `null`. Optional extras: `"repeats": "weekly"` for a goal
-  that resets each week, `steps` (shown as a checklist, with the first `done`
-  of them ticked) and `recipePicks`.
-- `next`: the order is the priority order. Move a line up or down to change it.
-- `log`: date, goal id, one sentence.
-- `tried`: `status` is `done`, `keeping` or `ruled out`.

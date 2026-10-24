@@ -2,8 +2,9 @@
   "name": "goal-dashboard",
   "private": true,
   "type": "module",
-  "description": "Asher's goals dashboard. The api/ folder is the small server piece that talks to Claude.",
+  "description": "A goals app you chat with. The api/ folder is the server piece that talks to Claude and the database.",
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.3.0"
+    "@anthropic-ai/sdk": "^1.3.0",
+    "postgres": "^3.4.9"
   }
 }
