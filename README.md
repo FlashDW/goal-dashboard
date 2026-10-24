@@ -21,10 +21,13 @@ plus a few small server files that run on Vercel.
 | `api/me.js` | Sends the page your goals, todos and recent chat when it opens |
 | `api/chat.js` | Passes your message to Claude, which can add and change your goals and todos |
 | `api/todo.js` | Ticking or deleting a todo straight from the list |
-| `lib/db.js` | The database connection, and the tables (it creates them itself the first time) |
+| `api/undo.js` | The Undo button: reverses everything the AI changed in one reply |
+| `lib/db.js` | The database connection, and the tables (it creates and updates them itself, see "Changing the database" below) |
 | `lib/auth.js` | Password hashing and sign-in tokens |
 | `lib/chat.js` | The tools Claude uses to change goals and todos |
-| `package.json` | Tells Vercel to install the two libraries the server uses |
+| `package.json` | Tells Vercel to install the two libraries the server uses, and how to run the tests |
+| `test/` | Automatic checks: passwords, the AI's tools, undo, and that nobody can touch someone else's list |
+| `.github/workflows/test.yml` | Runs the tests on GitHub for every pull request |
 
 ### How it keeps things safe
 
@@ -34,8 +37,13 @@ plus a few small server files that run on Vercel.
   person. The AI's tools get the user from the login, never from the AI, so
   even if someone tricks the AI it can only touch their own list.
 - **Strangers can't run up the bill.** Making an account needs an invite code
-  (the `CHAT_PASSCODE` setting), and each person can send at most 60 chat
-  messages a day (change it with `DAILY_MESSAGE_LIMIT`).
+  (the `CHAT_PASSCODE` setting; four random words make a good one), each
+  person can send at most 60 chat messages a day (`DAILY_MESSAGE_LIMIT`), and
+  everyone together at most 200 a day (`TOTAL_DAILY_LIMIT`). That total is the
+  real ceiling on the AI bill, because an invite code can be passed around.
+- **Every AI change can be undone.** The AI makes small changes right away,
+  and each reply that changed something has an Undo button that puts it all
+  back.
 - **Guessing passwords** is slowed down: after 10 wrong tries an account waits
   15 minutes.
 - The API key and database password live only in Vercel's settings, never in
@@ -68,6 +76,22 @@ The AI part (steps 1 to 3) is already done if the old chat worked.
 `SERVER_URL` in `app.js` points at the Vercel project's main address,
 https://goal-dashboard-one.vercel.app , which the GitHub Pages site uses. That
 address also shows the whole app, so you can use either one.
+
+## Changing the database
+
+`lib/db.js` keeps the database layout as a numbered list of steps
+(`MIGRATIONS`). When the server starts it runs any step that hasn't run yet
+and remembers it in a `schema_migrations` table, so there's still no SQL to
+type by hand. To change the layout, add a new step at the end of the list.
+Never edit a step that's already live: the database won't run it again.
+
+## Tests
+
+`npm test` runs the checks. On your computer the database tests are skipped
+unless `TEST_DATABASE_URL` points at an empty throwaway Postgres database
+(never the real one, the tests wipe it). On GitHub every pull request runs all
+of them automatically with a fresh database; a red X on the PR means something
+broke.
 
 ## Run it on your computer
 

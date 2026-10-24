@@ -191,8 +191,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .msg.error { color: var(--error); }
 .msg.typing { color: var(--muted); }
 
-.changes { list-style: none; margin: 8px 0 0; padding: 8px 0 0; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--done); white-space: normal; }
+.changes { margin: 8px 0 0; padding: 8px 0 0; border-top: 1px solid var(--border); font-size: 0.85rem; white-space: normal; display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; }
+.changes ul { list-style: none; margin: 0; padding: 0; color: var(--done); }
 .changes li::before { content: "✓ "; }
+.changes .undo { flex: none; }
+.changes .undone { flex: none; color: var(--muted); }
 
 .chat-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
 
