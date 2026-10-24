@@ -1,0 +1,29 @@
+{
+  "goals": [
+    {"id": "fitness", "area": "Basketball and fitness", "name": "5 sessions a week (3 basketball, 2 lifting)", "done": 0, "target": 5, "unit": "sessions this week", "due": null, "repeats": "weekly"},
+    {"id": "cs50ai", "area": "Extracurricular and passion projects", "name": "Finish CS50 AI", "done": 3, "target": 7, "unit": "weeks", "due": "2027-06-01"},
+    {"id": "projects", "area": "Extracurricular and passion projects", "name": "Ship 3 projects", "done": 0, "target": 3, "unit": "projects", "due": "2027-06-01"},
+    {"id": "cooking", "area": "Extracurricular and passion projects", "name": "Cook a new dish each month", "done": 0, "target": 8, "unit": "dishes", "due": "2027-06-01", "recipePicks": [{"month": "2026-11", "name": "Chicken tinga tacos", "time": "1 hour"}, {"month": "2026-11", "name": "Margherita pizza with homemade dough", "time": "2 hours"}, {"month": "2026-11", "name": "Beef and broccoli stir fry", "time": "40 min"}]},
+    {"id": "job", "area": "A job, now and this summer", "name": "Barista at 61C", "done": 0, "target": 3, "unit": "steps", "due": null, "steps": ["Work permit approved", "61C has an opening and I apply", "Start the job"]},
+    {"id": "japanese", "area": "Summer plans and trips", "name": "20 Japanese travel phrases for the Japan trip", "done": 0, "target": 20, "unit": "phrases", "due": "2027-06-01"}
+  ],
+  "next": [
+    {"task": "Check email for the work permit or a reply from the district", "goal": "job", "time": "5 min"},
+    {"task": "Pick this month's recipe from the 3 November picks", "goal": "cooking", "time": "10 min"},
+    {"task": "Watch the CS50 AI Week 3 lecture (Optimization)", "goal": "cs50ai", "time": "2 hours"},
+    {"task": "Pick your first project", "goal": "projects", "time": "30 min"},
+    {"task": "Stop by 61C and ask about openings (on or after Nov 14)", "goal": "job", "time": "15 min"},
+    {"task": "Cook the November dish", "goal": "cooking", "time": "an afternoon"}
+  ],
+  "log": [],
+  "tried": [],
+  "sampleChat": {
+    "goal": "job",
+    "messages": [
+      {"from": "me", "text": "What if 61C doesn't have an opening for a while?"},
+      {"from": "ai", "text": "Then give it a deadline so it doesn't drift. Want me to set the target to starting a job by the end of January?", "suggestion": {"field": "due", "value": "2027-01-31"}},
+      {"from": "me", "text": "Sure. Should I look anywhere else?"},
+      {"from": "ai", "text": "Have a backup ready. I can add a step to Next up to ask two other coffee shops nearby if they're hiring.", "suggestion": {"field": "next", "value": {"task": "Ask two other coffee shops nearby if they're hiring", "time": "an afternoon"}}}
+    ]
+  }
+}
