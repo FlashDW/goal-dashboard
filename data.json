@@ -1,39 +1,29 @@
 {
   "goals": [
-    {"id": "fitness", "area": "Basketball and fitness", "name": "Pickup games or lifting", "done": 2, "target": 3, "unit": "sessions this week", "due": "Every week"},
-    {"id": "cs50ai", "area": "Extracurricular and passion projects", "name": "Finish CS50 AI", "done": 2, "target": 7, "unit": "weeks", "due": "2027-01-03"},
-    {"id": "projects", "area": "Extracurricular and passion projects", "name": "Ship projects", "done": 1, "target": 3, "unit": "projects", "due": "2027-06-01"},
-    {"id": "job", "area": "A job, now and this summer", "name": "Summer job", "done": 0, "target": 3, "unit": "steps", "due": "2027-06-01"},
-    {"id": "summer", "area": "Summer plans and trips", "name": "Summer 2027 set", "done": 1, "target": 4, "unit": "steps", "due": "2027-04-30"}
+    {"id": "fitness", "area": "Basketball and fitness", "name": "5 sessions a week (3 basketball, 2 lifting)", "done": 0, "target": 5, "unit": "sessions this week", "due": null, "repeats": "weekly"},
+    {"id": "cs50ai", "area": "Extracurricular and passion projects", "name": "Finish CS50 AI", "done": 3, "target": 7, "unit": "weeks", "due": "2027-06-01"},
+    {"id": "projects", "area": "Extracurricular and passion projects", "name": "Ship 3 projects", "done": 0, "target": 3, "unit": "projects", "due": "2027-06-01"},
+    {"id": "cooking", "area": "Extracurricular and passion projects", "name": "Cook a new dish each month", "done": 0, "target": 8, "unit": "dishes", "due": "2027-06-01", "recipePicks": [{"month": "2026-11", "name": "Chicken tinga tacos", "time": "1 hour"}, {"month": "2026-11", "name": "Margherita pizza with homemade dough", "time": "2 hours"}, {"month": "2026-11", "name": "Beef and broccoli stir fry", "time": "40 min"}]},
+    {"id": "job", "area": "A job, now and this summer", "name": "Barista at 61C", "done": 0, "target": 3, "unit": "steps", "due": null, "steps": ["Work permit approved", "61C has an opening and I apply", "Start the job"]},
+    {"id": "japanese", "area": "Summer plans and trips", "name": "20 Japanese travel phrases for the Japan trip", "done": 0, "target": 20, "unit": "phrases", "due": "2027-06-01"}
   ],
   "next": [
-    {"task": "Get the work permit form", "goal": "job", "time": "15 min"},
-    {"task": "Watch the CS50 AI week 2 lecture", "goal": "cs50ai", "time": "2 hours"},
-    {"task": "Text the group about pickup on Saturday", "goal": "fitness", "time": "5 min"},
-    {"task": "List three summer programs to look at", "goal": "summer", "time": "30 min"},
-    {"task": "Sketch the next project idea", "goal": "projects", "time": "an afternoon"}
+    {"task": "Check email for the work permit or a reply from the district", "goal": "job", "time": "5 min"},
+    {"task": "Pick this month's recipe from the 3 November picks", "goal": "cooking", "time": "10 min"},
+    {"task": "Watch the CS50 AI Week 3 lecture (Optimization)", "goal": "cs50ai", "time": "2 hours"},
+    {"task": "Pick your first project", "goal": "projects", "time": "30 min"},
+    {"task": "Stop by 61C and ask about openings (on or after Nov 14)", "goal": "job", "time": "15 min"},
+    {"task": "Cook the November dish", "goal": "cooking", "time": "an afternoon"}
   ],
-  "log": [
-    {"date": "2026-10-24", "goal": "cs50ai", "note": "Finished the Search week project."},
-    {"date": "2026-10-23", "goal": "fitness", "note": "Lifted after school: squat and bench."},
-    {"date": "2026-10-18", "goal": "summer", "note": "Talked with my parents about summer options."},
-    {"date": "2026-10-17", "goal": "projects", "note": "Entered my app in the Congressional App Challenge."},
-    {"date": "2026-10-16", "goal": "fitness", "note": "Two hours of pickup at the rec center."},
-    {"date": "2026-10-10", "goal": "cs50ai", "note": "Started CS50 AI and finished week 0."}
-  ],
-  "tried": [
-    {"name": "Steel Dragons robotics", "date": "2026-10", "status": "ruled out", "why": "Not for me."},
-    {"name": "Congressional App Challenge", "date": "2026-10", "status": "done", "why": "Entered my app."},
-    {"name": "Lifting after school", "date": "2026-09", "status": "keeping", "why": "Feels good and fits my schedule."},
-    {"name": "Cooking a new dish each month", "date": "2026-09", "status": "keeping", "why": "Fun, and the family likes it."}
-  ],
+  "log": [],
+  "tried": [],
   "sampleChat": {
     "goal": "job",
     "messages": [
-      {"from": "me", "text": "I'd rather work this winter than wait for summer."},
-      {"from": "ai", "text": "Then the first step moves up. Want me to change the target to a part-time job by January?", "suggestion": {"field": "due", "value": "2027-01-31"}},
-      {"from": "me", "text": "Yes. What should I do first?"},
-      {"from": "ai", "text": "Ask two places near you if they're hiring. I can put that near the top of Next up.", "suggestion": {"field": "next", "value": {"task": "Ask two places nearby if they're hiring", "time": "an afternoon"}}}
+      {"from": "me", "text": "What if 61C doesn't have an opening for a while?"},
+      {"from": "ai", "text": "Then give it a deadline so it doesn't drift. Want me to set the target to starting a job by the end of January?", "suggestion": {"field": "due", "value": "2027-01-31"}},
+      {"from": "me", "text": "Sure. Should I look anywhere else?"},
+      {"from": "ai", "text": "Have a backup ready. I can add a step to Next up to ask two other coffee shops nearby if they're hiring.", "suggestion": {"field": "next", "value": {"task": "Ask two other coffee shops nearby if they're hiring", "time": "an afternoon"}}}
     ]
   }
 }

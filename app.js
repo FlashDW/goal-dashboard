@@ -144,8 +144,25 @@ function renderGoalStatus(goal) {
           el("p", { class: "count" }, `${goal.done ?? 0} of ${goal.target} ${goal.unit || ""}`.trim()),
         )
       : el("p", { class: "count" }, "No progress bar, just the log."),
-    el("p", { class: "due" }, el("span", { class: "label" }, "Target: "), formatDate(goal.due)),
+    goal.steps && el("ul", { class: "steps" },
+      goal.steps.map((step, i) => el("li", { class: i < (goal.done ?? 0) ? "done" : "" }, step)),
+    ),
+    goal.recipePicks && el("div", { class: "picks" },
+      el("p", { class: "label" }, "Recipe picks"),
+      el("ul", { class: "mini-log" }, goal.recipePicks.map((r) =>
+        el("li", {}, el("span", { class: "date" }, formatMonth(r.month)), " ", `${r.name} (${r.time})`))),
+    ),
+    el("p", { class: "due" }, el("span", { class: "label" }, "Target: "), dueText(goal)),
   );
+}
+
+// "due" can be a date, words like "Every week", or empty. A goal that repeats
+// (like weekly sessions) says so instead of showing a date.
+function dueText(goal) {
+  if (goal.due) return formatDate(goal.due);
+  if (goal.repeats === "weekly") return "Every week";
+  if (goal.repeats) return goal.repeats;
+  return "No date set";
 }
 
 function renderCards() {
@@ -182,6 +199,10 @@ function renderCards() {
 
 function renderLog() {
   const list = document.getElementById("log-list");
+  if (data.log.length === 0) {
+    list.replaceChildren(el("li", { class: "empty" }, "Nothing logged yet. Tick off a task in Next up and it shows up here."));
+    return;
+  }
   list.replaceChildren(
     ...sortedLog().map((e) =>
       el("li", {},
@@ -199,6 +220,10 @@ const triedIcons = { "done": "✓", "keeping": "★", "ruled out": "✕" };
 
 function renderTried() {
   const list = document.getElementById("tried-list");
+  if (data.tried.length === 0) {
+    list.replaceChildren(el("li", { class: "empty" }, "Nothing here yet. Add things you try to the tried list in data.json."));
+    return;
+  }
   list.replaceChildren(
     ...data.tried.map((t) => {
       const kind = t.status.replace(/\s+/g, "-");
