@@ -51,11 +51,11 @@ Claude.
      the address of the site that may use the chat.
 
    Then open Deployments and Redeploy so the server picks them up.
-4. **Connect the GitHub Pages site.** Copy your Vercel address (like
-   `https://goal-dashboard-xyz.vercel.app`) and paste it into `CHAT_API_URL`
-   near the top of the chat section in `app.js`, with `/api/chat` on the end.
-   Commit that. The Vercel address itself also shows the whole dashboard with
-   the chat working, so you can use either one.
+4. **Connect the GitHub Pages site.** `CHAT_API_URL` in `app.js` points at the
+   Vercel project's main address (from Domains on the project page, not a
+   single deploy's long address): https://goal-dashboard-one.vercel.app . That
+   address also shows the whole dashboard with the chat working, so you can
+   use either one.
 
 ### Trying the chat on your computer
 
