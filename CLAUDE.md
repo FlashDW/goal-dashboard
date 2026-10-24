@@ -4,7 +4,7 @@ Notes for Claude Code when working in this repo.
 
 ## Project
 
-A goal-tracking dashboard. v1 is a static mockup in plain HTML, CSS and JavaScript (no framework, no build step): `index.html`, `style.css`, `app.js`, with all content in `data.json`. See README.md for how to run it locally.
+A goal-tracking dashboard in plain HTML, CSS and JavaScript (no framework, no build step): `index.html`, `style.css`, `app.js`, with all content in `data.json`. The "Talk it through" chat calls Claude through `api/chat.js`, a Vercel serverless function that keeps the API key server-side; never put a key in browser code. See README.md for setup and running locally.
 
 ## Environment
 

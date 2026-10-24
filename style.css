@@ -301,6 +301,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   flex-direction: column;
   gap: 10px;
   min-height: 240px;
+  flex: 1;
 }
 
 .msg { max-width: 85%; padding: 10px 12px; border-radius: 14px; animation: pop 0.2s ease-out; }
@@ -331,6 +332,25 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   color: var(--text);
   width: 100%;
 }
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+.chat-form input,
+.passcode input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+.passcode { align-self: stretch; }
 
 .chat-end { text-align: center; color: var(--muted); font-size: 0.85rem; }
 
