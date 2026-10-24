@@ -1,0 +1,68 @@
+{
+  "about": "Asher's plan from the planning chat. On a new account the page offers \"Start from my plan\", which adds all of this. Edit it here to change what gets added.",
+  "goals": [
+    {
+      "key": "fitness",
+      "title": "Work out 5 times a week",
+      "area": "Basketball and fitness",
+      "kind": "weekly",
+      "target": 5,
+      "unit": "workouts",
+      "notes": "3 basketball, 2 lifts (push, pull, legs rotating). Lift numbers stay in Hevy."
+    },
+    {
+      "key": "cs50ai",
+      "title": "Finish CS50 AI",
+      "area": "Passion projects",
+      "kind": "count",
+      "progress": 3,
+      "target": 7,
+      "unit": "weeks",
+      "due": "2027-06-01"
+    },
+    {
+      "key": "projects",
+      "title": "Ship 3 projects",
+      "area": "Passion projects",
+      "kind": "count",
+      "target": 3,
+      "unit": "projects",
+      "due": "2027-06-01"
+    },
+    {
+      "key": "cooking",
+      "title": "Cook a new dish each month",
+      "area": "Passion projects",
+      "kind": "count",
+      "target": 8,
+      "unit": "dishes",
+      "due": "2027-06-01",
+      "notes": "November picks: chicken tinga tacos (1 hour), margherita pizza with homemade dough (2 hours), beef and broccoli stir fry (40 min). Likes Mexican, pasta, pizza, stir fry; under 2 hours."
+    },
+    {
+      "key": "job",
+      "title": "Barista at 61C",
+      "area": "Job",
+      "kind": "steps",
+      "steps": ["Work permit approved", "61C has an opening and I apply", "Start the job"]
+    },
+    {
+      "key": "japanese",
+      "title": "20 Japanese travel phrases",
+      "area": "Summer plans and trips",
+      "kind": "count",
+      "target": 20,
+      "unit": "phrases",
+      "due": "2027-06-01"
+    }
+  ],
+  "next": [
+    { "text": "Check email for the work permit or a reply from the district", "goal": "job", "time": "5 min" },
+    { "text": "Pick this month's recipe from the 3 November picks", "goal": "cooking", "time": "10 min" },
+    { "text": "Watch the CS50 AI week 3 lecture (Optimization)", "goal": "cs50ai", "time": "2 hours" },
+    { "text": "Pick your first project", "goal": "projects", "time": "30 min" },
+    { "text": "Stop by 61C and ask about openings (on or after Nov 14)", "goal": "job", "time": "15 min" },
+    { "text": "Learn your first 5 Japanese phrases", "goal": "japanese", "time": "20 min" },
+    { "text": "Cook the November dish", "goal": "cooking", "time": "an afternoon" }
+  ]
+}

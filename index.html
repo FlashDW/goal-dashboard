@@ -11,7 +11,7 @@
   <section id="auth" class="auth" hidden>
     <div class="auth-card">
       <h1>My goals</h1>
-      <p class="muted">Chat with an AI that keeps your goals and todos for you.</p>
+      <p class="muted">All your goals on one page, and a coach you can just tell what you did.</p>
 
       <div class="tabs" role="tablist">
         <button type="button" role="tab" id="tab-login" aria-selected="true">Log in</button>
@@ -46,27 +46,76 @@
     </header>
 
     <main class="layout">
-      <section class="chat" aria-label="Chat">
+      <div class="dash">
+        <!-- Only for a brand-new account with no goals -->
+        <section id="start" class="card start" hidden>
+          <h2>Let's set up your goals</h2>
+          <p class="muted">Add the plan from the planning chat in one tap (you can change anything after), or tell the coach what you're working on.</p>
+          <div class="start-actions">
+            <button type="button" class="btn" id="start-plan">Start from my plan</button>
+            <button type="button" class="btn ghost" id="start-chat">Tell the coach instead</button>
+          </div>
+          <p id="start-error" class="error" role="alert" hidden></p>
+        </section>
+
+        <section class="card" aria-labelledby="next-title">
+          <div class="card-head">
+            <h2 id="next-title">Next up</h2>
+            <span class="muted small">Bored? Start at the top.</span>
+          </div>
+          <ol id="next-list" class="next-list"></ol>
+          <button type="button" class="link-btn" id="next-more" hidden></button>
+        </section>
+
+        <section class="card" id="week-card" aria-labelledby="week-title" hidden>
+          <h2 id="week-title">This week</h2>
+          <div id="week" class="week"></div>
+        </section>
+
+        <section aria-labelledby="goals-title">
+          <h2 id="goals-title" class="section-title">Goals</h2>
+          <div id="goal-grid" class="goal-grid"></div>
+        </section>
+
+        <section class="card" aria-label="Log and Tried">
+          <div class="tabs" role="tablist">
+            <button type="button" role="tab" id="tab-log" aria-selected="true" aria-controls="log-list">Log</button>
+            <button type="button" role="tab" id="tab-tried" aria-selected="false" aria-controls="tried-list">Tried</button>
+          </div>
+          <div id="log-list" class="log-list" role="tabpanel" aria-labelledby="tab-log"></div>
+          <ul id="tried-list" class="tried-list" role="tabpanel" aria-labelledby="tab-tried" hidden></ul>
+        </section>
+      </div>
+
+      <!-- The chat: a column on the right on a laptop, a sheet over the page on a phone -->
+      <aside id="chat" class="chat" aria-label="Coach chat">
+        <div class="chat-head">
+          <div>
+            <h2>Coach</h2>
+            <p class="muted small">Tell me what you did, or ask what to do next.</p>
+          </div>
+          <button type="button" class="icon-btn chat-close" id="chat-close" aria-label="Close chat">✕</button>
+        </div>
         <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
         <form id="chat-form" class="chat-form">
-          <input name="text" type="text" aria-label="Your message" placeholder="Try: add a todo for getting groceries" autocomplete="off" maxlength="2000">
+          <input name="text" type="text" aria-label="Your message" placeholder="Like: did push day" autocomplete="off" maxlength="2000">
           <button name="send" type="submit" class="btn">Send</button>
         </form>
-      </section>
-
-      <aside class="lists">
-        <section aria-labelledby="todos-title">
-          <h2 id="todos-title">Todos</h2>
-          <ul id="todo-list" class="todo-list"></ul>
-        </section>
-        <section aria-labelledby="goals-title">
-          <h2 id="goals-title">Goals</h2>
-          <ul id="goal-list" class="goal-list"></ul>
-        </section>
       </aside>
     </main>
+
+    <!-- Phone only: tap to open the chat -->
+    <button type="button" id="chat-bar" class="chat-bar">
+      <span>Tell the coach what you did…</span>
+      <span class="chat-bar-send" aria-hidden="true">↑</span>
+    </button>
+
+    <div id="toast" class="toast" role="status" hidden>
+      <span id="toast-text"></span>
+      <button type="button" class="link-btn" id="toast-undo">Undo</button>
+    </div>
   </div>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

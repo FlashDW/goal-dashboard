@@ -1,11 +1,25 @@
 # goal-dashboard
 
-A goals app you talk to. Make an account with a name and password, then chat
-with an AI that keeps your goals and todos for you: "add a todo for getting
-groceries", "I want to run a 5K by June", "I finished my essay". Your goals and
-todos sit next to the chat, and they're saved in a database, so they're still
-there when you reload or log in from another device. Everyone who signs up gets
-their own private list.
+A goals app with a coach you talk to. Make an account with a name and password
+and you get a dashboard:
+
+- **Next up**: one ordered list of tasks across every goal, each with a time
+  ("10 min", "an afternoon"). Bored? Start at the top. Tick one and it moves to
+  the Log.
+- **This week**: weekly goals like 5 workouts, with a dot for each day and how
+  many weeks in a row you've hit it.
+- **Goal cards**: where each goal stands, its date, the next step, the last two
+  things you logged, and a "Talk it through" button.
+- **Log and Tried**: everything you've done, and everything you've tried (done,
+  keeping, or ruled out, with why).
+
+Beside it (or behind the bar at the bottom on a phone) is the chat. Tell the
+coach what happened, "did push day", "move the recipe to the top", "I tried
+robotics club but it's not for me", and it updates the dashboard. Everything it
+changes, and everything you tap, can be undone. A new account can tap "Start
+from my plan" to add the plan in `plan.json` in one go. It's all saved in a
+database, so it's there when you reload or log in from another device, and
+everyone who signs up gets their own private dashboard.
 
 ## How it's built
 
@@ -14,17 +28,20 @@ plus a few small server files that run on Vercel.
 
 | File | What it does |
 | --- | --- |
-| `index.html` | The page: the log-in box, and the chat with your Todos and Goals beside it |
+| `index.html` | The page: the log-in box, the dashboard, and the chat |
 | `style.css` | How it looks, including phone layout and dark mode |
-| `app.js` | Logs you in, sends chat messages, and draws your lists |
+| `app.js` | Logs you in, draws the dashboard, and sends chat messages |
+| `week.js` | Date math for weekly goals: this week's count and the streak |
+| `plan.json` | The plan "Start from my plan" adds to a new account |
 | `api/signup.js`, `api/login.js`, `api/logout.js` | Making an account, logging in and out |
-| `api/me.js` | Sends the page your goals, todos and recent chat when it opens |
-| `api/chat.js` | Passes your message to Claude, which can add and change your goals and todos |
-| `api/todo.js` | Ticking or deleting a todo straight from the list |
-| `api/undo.js` | The Undo button: reverses everything the AI changed in one reply |
+| `api/me.js` | Sends the page your dashboard and recent chat when it opens |
+| `api/chat.js` | Passes your message to Claude, which can update your dashboard |
+| `api/edit.js` | Taps on the page: ticking, moving or deleting a task, logging a workout, "Start from my plan" |
+| `api/undo.js` | The Undo button: reverses everything one chat reply or one tap changed |
 | `lib/db.js` | The database connection, and the tables (it creates and updates them itself, see "Changing the database" below) |
 | `lib/auth.js` | Password hashing and sign-in tokens |
-| `lib/chat.js` | The tools Claude uses to change goals and todos |
+| `lib/chat.js` | The tools Claude (and the page) use to change goals, Next up, the Log and Tried |
+| `lib/plan.js` | Adds a whole plan at once, as one undoable change |
 | `package.json` | Tells Vercel to install the two libraries the server uses, and how to run the tests |
 | `test/` | Automatic checks: passwords, the AI's tools, undo, and that nobody can touch someone else's list |
 | `.github/workflows/test.yml` | Runs the tests on GitHub for every pull request |
