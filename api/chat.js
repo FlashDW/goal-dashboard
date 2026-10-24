@@ -7,11 +7,15 @@
 //   DATABASE_URL         see lib/db.js (required)
 //   CHAT_PASSCODE        the invite code for making an account (see api/signup.js)
 //   DAILY_MESSAGE_LIMIT  messages each person can send per day, default 60
+//   TOTAL_DAILY_LIMIT    messages everyone together can send per day, default
+//                        200. This is the real ceiling on the AI bill, since the
+//                        invite code can be passed around.
 
+import { randomUUID } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { sql, loadState } from "../lib/db.js";
 import { route, body } from "../lib/http.js";
-import { TOOLS, runTool, recentMessages } from "../lib/chat.js";
+import { TOOLS, runTool, recentMessages, localToday } from "../lib/chat.js";
 
 // Claude Haiku 5.5: small, fast and very cheap (well under a cent a message).
 // For a smarter but pricier coach, use "claude-opus-5-5".
@@ -20,6 +24,7 @@ const MAX_TEXT = 2000;
 const HISTORY = 20; // how many earlier messages Claude sees
 const MAX_ROUNDS = 6; // tool-use rounds per message, so one message can't loop forever
 const DAILY_LIMIT = Number(process.env.DAILY_MESSAGE_LIMIT) || 60;
+const TOTAL_LIMIT = Number(process.env.TOTAL_DAILY_LIMIT) || 200;
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY
 
@@ -31,9 +36,8 @@ You can also help them think: break a goal into todos, plan a week, or pick what
 
 The current goals and todos, with their ids, come as JSON at the top of the latest message. Use the ids exactly as given. Never mention ids, JSON or tool names to the person. Today's date is in that message too; turn "Friday" or "next week" into real YYYY-MM-DD dates.`;
 
-function contextNote(user, state) {
-  const today = new Date().toISOString().slice(0, 10);
-  const weekday = new Date().toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
+function contextNote(user, state, today) {
+  const weekday = new Date(today + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
   return `[Today is ${weekday} ${today}. You're talking with ${user.name}. Their goals and todos right now:\n${JSON.stringify(state)}]\n\n`;
 }
 
@@ -57,15 +61,23 @@ export default route(["POST"], async (req, res, user) => {
   if (count >= DAILY_LIMIT) {
     return res.status(429).json({ error: `That's ${DAILY_LIMIT} messages today, the daily limit. Try again tomorrow.` });
   }
+  const [{ total }] = await sql`
+    select count(*)::int as total from messages
+    where role = 'user' and created_at > now() - interval '1 day'`;
+  if (total >= TOTAL_LIMIT) {
+    return res.status(429).json({ error: "The app has used up today's AI messages for everyone. Try again tomorrow." });
+  }
 
   const earlier = await recentMessages(user.id, HISTORY);
   await sql`insert into messages (user_id, role, text) values (${user.id}, 'user', ${text})`;
 
   const messages = [
     ...history(earlier),
-    { role: "user", content: contextNote(user, await loadState(user.id)) + text },
+    { role: "user", content: contextNote(user, await loadState(user.id), localToday(body(req).today)) + text },
   ];
+  const turn = randomUUID(); // tags this reply's changes so they can be undone together
   const changes = [];
+  const undo = () => (changes.length ? { undo: turn } : {});
   let reply = "";
 
   try {
@@ -91,7 +103,7 @@ export default route(["POST"], async (req, res, user) => {
       const results = [];
       for (const block of response.content) {
         if (block.type !== "tool_use") continue;
-        const { result, change, error } = await runTool(user.id, block.name, block.input);
+        const { result, change, error } = await runTool(user.id, block.name, block.input, turn);
         if (change) changes.push(change);
         results.push({ type: "tool_result", tool_use_id: block.id, content: result, ...(error && { is_error: true }) });
       }
@@ -100,16 +112,16 @@ export default route(["POST"], async (req, res, user) => {
   } catch (err) {
     if (err instanceof Anthropic.AuthenticationError) {
       console.error("Anthropic rejected the API key");
-      return res.status(500).json({ error: "The API key in Vercel isn't working. Check ANTHROPIC_API_KEY.", changes, ...(await loadState(user.id)) });
+      return res.status(500).json({ error: "The API key in Vercel isn't working. Check ANTHROPIC_API_KEY.", changes, ...undo(), ...(await loadState(user.id)) });
     }
     if (err instanceof Anthropic.RateLimitError) {
-      return res.status(429).json({ error: "Too many messages at once. Wait a minute and try again.", changes, ...(await loadState(user.id)) });
+      return res.status(429).json({ error: "Too many messages at once. Wait a minute and try again.", changes, ...undo(), ...(await loadState(user.id)) });
     }
     console.error(err);
-    return res.status(502).json({ error: "Claude didn't answer this time. Try again in a moment.", changes, ...(await loadState(user.id)) });
+    return res.status(502).json({ error: "Claude didn't answer this time. Try again in a moment.", changes, ...undo(), ...(await loadState(user.id)) });
   }
 
   if (!reply) reply = changes.length ? "Done." : "Sorry, I lost my train of thought. Can you say that again?";
   await sql`insert into messages (user_id, role, text) values (${user.id}, 'assistant', ${reply})`;
-  return res.status(200).json({ reply, changes, ...(await loadState(user.id)) });
+  return res.status(200).json({ reply, changes, ...undo(), ...(await loadState(user.id)) });
 }, { auth: true });

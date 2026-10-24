@@ -214,11 +214,29 @@ function renderLists() {
 
 // ---------- Chat ----------
 
-function addMessage(role, text, changes = []) {
+// The Undo button under a reply's changes puts everything back the way it was
+// before that reply.
+async function undoReply(turn, button) {
+  button.disabled = true;
+  const { ok, status, data } = await call("undo", { method: "POST", body: { turn } });
+  if (status === 401) return showAuth();
+  if (!ok) {
+    button.disabled = false;
+    return addMessage("assistant", data.error || "Couldn't undo that. Try again.").classList.add("error");
+  }
+  setLists(data);
+  button.replaceWith(el("span", { class: "undone" }, "Undone"));
+}
+
+function addMessage(role, text, changes = [], turn = null) {
   const box = $("chat-messages");
   box.querySelector(".chat-empty")?.remove();
+  const undoButton = turn && el("button", { type: "button", class: "btn ghost small undo" }, "Undo");
+  undoButton?.addEventListener("click", () => undoReply(turn, undoButton));
   const node = el("div", { class: "msg " + (role === "user" ? "me" : "ai") }, text,
-    changes.length > 0 && el("ul", { class: "changes" }, changes.map((c) => el("li", {}, c))));
+    changes.length > 0 && el("div", { class: "changes" },
+      el("ul", {}, changes.map((c) => el("li", {}, c))),
+      undoButton));
   box.append(node);
   box.scrollTop = box.scrollHeight;
   return node;
@@ -248,15 +266,15 @@ $("chat-form").addEventListener("submit", async (event) => {
   const thinking = addMessage("assistant", "…");
   thinking.classList.add("typing");
 
-  const { ok, status, data } = await call("chat", { method: "POST", body: { text } });
+  const { ok, status, data } = await call("chat", { method: "POST", body: { text, today: today() } });
   thinking.remove();
   form.send.disabled = false;
   form.text.focus();
 
   if (status === 401) return showAuth();
   setLists(data);
-  if (ok) addMessage("assistant", data.reply, data.changes || []);
-  else addMessage("assistant", data.error || "Something went wrong. Try again.", data.changes || []).classList.add("error");
+  if (ok) addMessage("assistant", data.reply, data.changes || [], data.undo);
+  else addMessage("assistant", data.error || "Something went wrong. Try again.", data.changes || [], data.undo).classList.add("error");
 });
 
 // ---------- start ----------
