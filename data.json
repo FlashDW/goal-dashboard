@@ -1,43 +1,39 @@
 {
   "goals": [
-    { "id": "fun", "area": "Fun and friends", "name": "Good weekends and plans made", "due": "Whatever feels right" },
-    { "id": "fitness", "area": "Basketball and fitness", "name": "Pickup games or lifting", "done": 2, "target": 3, "unit": "sessions this week", "due": "Every week" },
-    { "id": "cs50ai", "area": "Extracurricular and passion projects", "name": "Finish CS50 AI", "done": 2, "target": 7, "unit": "weeks", "due": "2027-01-03" },
-    { "id": "projects", "area": "Extracurricular and passion projects", "name": "Ship projects", "done": 1, "target": 3, "unit": "projects", "due": "2027-06-01" },
-    { "id": "job", "area": "A job, now and this summer", "name": "Summer job", "done": 0, "target": 3, "unit": "steps", "due": "2027-06-01" },
-    { "id": "summer", "area": "Summer plans and trips", "name": "Summer 2027 set", "done": 1, "target": 4, "unit": "steps", "due": "2027-04-30" }
+    {"id": "fitness", "area": "Basketball and fitness", "name": "Pickup games or lifting", "done": 2, "target": 3, "unit": "sessions this week", "due": "Every week"},
+    {"id": "cs50ai", "area": "Extracurricular and passion projects", "name": "Finish CS50 AI", "done": 2, "target": 7, "unit": "weeks", "due": "2027-01-03"},
+    {"id": "projects", "area": "Extracurricular and passion projects", "name": "Ship projects", "done": 1, "target": 3, "unit": "projects", "due": "2027-06-01"},
+    {"id": "job", "area": "A job, now and this summer", "name": "Summer job", "done": 0, "target": 3, "unit": "steps", "due": "2027-06-01"},
+    {"id": "summer", "area": "Summer plans and trips", "name": "Summer 2027 set", "done": 1, "target": 4, "unit": "steps", "due": "2027-04-30"}
   ],
   "next": [
-    { "task": "Get the work permit form", "goal": "job", "time": "15 min" },
-    { "task": "Watch the CS50 AI week 2 lecture", "goal": "cs50ai", "time": "2 hours" },
-    { "task": "Text the group about pickup on Saturday", "goal": "fitness", "time": "5 min" },
-    { "task": "List three summer programs to look at", "goal": "summer", "time": "30 min" },
-    { "task": "Plan something for next weekend", "goal": "fun", "time": "10 min" },
-    { "task": "Sketch the next project idea", "goal": "projects", "time": "an afternoon" }
+    {"task": "Get the work permit form", "goal": "job", "time": "15 min"},
+    {"task": "Watch the CS50 AI week 2 lecture", "goal": "cs50ai", "time": "2 hours"},
+    {"task": "Text the group about pickup on Saturday", "goal": "fitness", "time": "5 min"},
+    {"task": "List three summer programs to look at", "goal": "summer", "time": "30 min"},
+    {"task": "Sketch the next project idea", "goal": "projects", "time": "an afternoon"}
   ],
   "log": [
-    { "date": "2026-10-24", "goal": "cs50ai", "note": "Finished the Search week project." },
-    { "date": "2026-10-23", "goal": "fitness", "note": "Lifted after school: squat and bench." },
-    { "date": "2026-10-20", "goal": "fun", "note": "Great weekend: movie night at Sam's." },
-    { "date": "2026-10-18", "goal": "summer", "note": "Talked with my parents about summer options." },
-    { "date": "2026-10-17", "goal": "projects", "note": "Entered my app in the Congressional App Challenge." },
-    { "date": "2026-10-16", "goal": "fitness", "note": "Two hours of pickup at the rec center." },
-    { "date": "2026-10-12", "goal": "fun", "note": "Made plans for a hike with friends." },
-    { "date": "2026-10-10", "goal": "cs50ai", "note": "Started CS50 AI and finished week 0." }
+    {"date": "2026-10-24", "goal": "cs50ai", "note": "Finished the Search week project."},
+    {"date": "2026-10-23", "goal": "fitness", "note": "Lifted after school: squat and bench."},
+    {"date": "2026-10-18", "goal": "summer", "note": "Talked with my parents about summer options."},
+    {"date": "2026-10-17", "goal": "projects", "note": "Entered my app in the Congressional App Challenge."},
+    {"date": "2026-10-16", "goal": "fitness", "note": "Two hours of pickup at the rec center."},
+    {"date": "2026-10-10", "goal": "cs50ai", "note": "Started CS50 AI and finished week 0."}
   ],
   "tried": [
-    { "name": "Steel Dragons robotics", "date": "2026-10", "status": "ruled out", "why": "Not for me." },
-    { "name": "Congressional App Challenge", "date": "2026-10", "status": "done", "why": "Entered my app." },
-    { "name": "Lifting after school", "date": "2026-09", "status": "keeping", "why": "Feels good and fits my schedule." },
-    { "name": "Cooking a new dish each month", "date": "2026-09", "status": "keeping", "why": "Fun, and the family likes it." }
+    {"name": "Steel Dragons robotics", "date": "2026-10", "status": "ruled out", "why": "Not for me."},
+    {"name": "Congressional App Challenge", "date": "2026-10", "status": "done", "why": "Entered my app."},
+    {"name": "Lifting after school", "date": "2026-09", "status": "keeping", "why": "Feels good and fits my schedule."},
+    {"name": "Cooking a new dish each month", "date": "2026-09", "status": "keeping", "why": "Fun, and the family likes it."}
   ],
   "sampleChat": {
     "goal": "job",
     "messages": [
-      { "from": "me", "text": "I'd rather work this winter than wait for summer." },
-      { "from": "ai", "text": "Then the first step moves up. Want me to change the target to a part-time job by January?", "suggestion": { "field": "due", "value": "2027-01-31" } },
-      { "from": "me", "text": "Yes. What should I do first?" },
-      { "from": "ai", "text": "Ask two places near you if they're hiring. I can put that near the top of Next up.", "suggestion": { "field": "next", "value": { "task": "Ask two places nearby if they're hiring", "time": "an afternoon" } } }
+      {"from": "me", "text": "I'd rather work this winter than wait for summer."},
+      {"from": "ai", "text": "Then the first step moves up. Want me to change the target to a part-time job by January?", "suggestion": {"field": "due", "value": "2027-01-31"}},
+      {"from": "me", "text": "Yes. What should I do first?"},
+      {"from": "ai", "text": "Ask two places near you if they're hiring. I can put that near the top of Next up.", "suggestion": {"field": "next", "value": {"task": "Ask two places nearby if they're hiring", "time": "an afternoon"}}}
     ]
   }
 }

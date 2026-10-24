@@ -34,7 +34,7 @@ device toolbar (Ctrl+Shift+M).
 ### Editing data.json
 
 - `goals`: one or more per area. Leave out `target` for a goal with no progress
-  bar (like Fun and friends). `due` can be a date (`2027-01-03`) or words
+  bar. `due` can be a date (`2027-01-03`) or words
   (`Every week`).
 - `next`: the order is the priority order. Move a line up or down to change it.
 - `log`: date, goal id, one sentence.
