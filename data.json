@@ -16,14 +16,5 @@
     {"task": "Cook the November dish", "goal": "cooking", "time": "an afternoon"}
   ],
   "log": [],
-  "tried": [],
-  "sampleChat": {
-    "goal": "job",
-    "messages": [
-      {"from": "me", "text": "What if 61C doesn't have an opening for a while?"},
-      {"from": "ai", "text": "Then give it a deadline so it doesn't drift. Want me to set the target to starting a job by the end of January?", "suggestion": {"field": "due", "value": "2027-01-31"}},
-      {"from": "me", "text": "Sure. Should I look anywhere else?"},
-      {"from": "ai", "text": "Have a backup ready. I can add a step to Next up to ask two other coffee shops nearby if they're hiring.", "suggestion": {"field": "next", "value": {"task": "Ask two other coffee shops nearby if they're hiring", "time": "an afternoon"}}}
-    ]
-  }
+  "tried": []
 }

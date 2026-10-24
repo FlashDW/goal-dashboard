@@ -1,4 +1,4 @@
-// Goals dashboard v1: reads data.json and draws the whole page from it.
+// Goals dashboard: reads data.json and draws the whole page from it.
 // Changes made on the page (ticking tasks, accepting suggestions) live only in
 // memory, so a reload starts again from data.json.
 
@@ -238,11 +238,32 @@ function renderTried() {
   );
 }
 
-// ---------- Talk it through (scripted chat) ----------
+// ---------- Talk it through (real AI chat) ----------
 
-let chatRun = 0; // bumps each time the chat opens, so an old playback stops
+// Where the chat server lives (api/chat.js, deployed on Vercel). On the Vercel
+// site itself, or with `vercel dev` on your computer, it's just "/api/chat".
+// For the GitHub Pages site, paste your Vercel address here, like
+// "https://goal-dashboard-asher.vercel.app/api/chat".
+const CHAT_API_URL = "";
 
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function chatEndpoint() {
+  const host = location.hostname;
+  if (host.endsWith(".vercel.app") || host === "localhost" || host === "127.0.0.1") return "/api/chat";
+  return CHAT_API_URL;
+}
+
+// The passcode is saved in this browser so you only type it once.
+const PASSCODE_KEY = "chatPasscode";
+function savedPasscode() {
+  try { return localStorage.getItem(PASSCODE_KEY) || ""; } catch { return ""; }
+}
+function savePasscode(code) {
+  try { code ? localStorage.setItem(PASSCODE_KEY, code) : localStorage.removeItem(PASSCODE_KEY); } catch { /* private window */ }
+}
+
+let chatHistory = []; // [{ role: "user" | "assistant", text }], starting with "user"
+let chatArea = "";
+let chatRun = 0; // bumps each time the chat opens, so a late answer from an old chat is ignored
 
 function describeSuggestion(s, goal) {
   if (s.field === "next") return `Add to Next up: ${s.value.task} (${s.value.time})`;
@@ -326,43 +347,147 @@ function suggestionBox(s, goal) {
   });
 }
 
-async function openChat(fromGoal) {
-  const dialog = document.getElementById("chat");
+// The server sends { goal, field, value, time } with value always a string.
+// Turn it into the shape suggestionBox uses, or null if it doesn't fit the data.
+function toSuggestion(raw) {
+  const goal = goalById(raw.goal);
+  if (!goal) return null;
+  if (raw.field === "next" && raw.value.trim()) {
+    return { goal, s: { field: "next", value: { task: raw.value.trim(), time: raw.time.trim() || "a bit" } } };
+  }
+  if (raw.field === "due" && isIsoDate(raw.value)) return { goal, s: { field: "due", value: raw.value } };
+  if (raw.field === "target" && typeof goal.target === "number" && Number(raw.value) > 0) {
+    return { goal, s: { field: "target", value: Number(raw.value) } };
+  }
+  return null;
+}
+
+function addMessage(from, text) {
   const messages = document.getElementById("chat-messages");
-  const chat = data.sampleChat;
-  const chatGoal = goalById(chat.goal);
-  const run = ++chatRun;
+  const bubble = el("div", { class: "msg " + from }, el("p", {}, text));
+  messages.append(bubble);
+  messages.scrollTop = messages.scrollHeight;
+  return bubble;
+}
 
-  document.getElementById("chat-title").textContent = "Talk it through: " + fromGoal.area;
-  document.getElementById("chat-note").textContent =
-    `Scripted sample about your ${chatGoal.name} goal. A real AI comes in a later version.`;
-  messages.replaceChildren();
-  if (!dialog.open) dialog.showModal();
+function addNotice(text) {
+  const messages = document.getElementById("chat-messages");
+  messages.append(el("p", { class: "chat-end" }, text));
+  messages.scrollTop = messages.scrollHeight;
+}
 
-  for (const msg of chat.messages) {
-    await wait(msg.from === "ai" ? 900 : 500);
-    if (run !== chatRun || !dialog.open) return;
+function setChatBusy(busy) {
+  const form = document.getElementById("chat-form");
+  form.elements.text.disabled = busy;
+  form.elements.send.disabled = busy;
+  form.elements.send.textContent = busy ? "Thinking…" : "Send";
+  if (!busy) form.elements.text.focus();
+}
 
-    messages.append(el("div", { class: "msg " + (msg.from === "ai" ? "ai" : "me") }, el("p", {}, msg.text)));
-    messages.scrollTop = messages.scrollHeight;
+// Asks for the passcode inside the chat, then sends again.
+function askPasscode(note) {
+  const messages = document.getElementById("chat-messages");
+  const input = el("input", { type: "password", "aria-label": "Chat passcode", placeholder: "Passcode", autocomplete: "current-password" });
+  const form = el("form", { class: "suggestion passcode" },
+    el("p", {}, note),
+    input,
+    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn small" }, "Save and send")),
+  );
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!input.value.trim()) return;
+    savePasscode(input.value.trim());
+    form.remove();
+    sendChat();
+  });
+  messages.append(form);
+  messages.scrollTop = messages.scrollHeight;
+  input.focus();
+}
 
-    if (msg.suggestion) {
-      await suggestionBox(msg.suggestion, chatGoal);
-      if (run !== chatRun || !dialog.open) return;
-    }
+// Sends the conversation so far and shows the answer.
+async function sendChat() {
+  const url = chatEndpoint();
+  if (!url) {
+    addNotice("The AI chat isn't connected on this site yet. See \"Real AI chat\" in the README.");
+    return;
+  }
+  const passcode = savedPasscode();
+  if (!passcode) {
+    askPasscode("Type the chat passcode (the CHAT_PASSCODE you set in Vercel).");
+    return;
   }
 
-  await wait(400);
-  if (run === chatRun && dialog.open) {
-    messages.append(el("p", { class: "chat-end" }, "End of the sample conversation."));
-    messages.scrollTop = messages.scrollHeight;
+  const run = chatRun;
+  setChatBusy(true);
+  let result;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Chat-Passcode": passcode },
+      body: JSON.stringify({ area: chatArea, dashboard: data, history: chatHistory }),
+    });
+    result = await res.json().catch(() => ({ error: "The chat server sent back something odd (HTTP " + res.status + ")." }));
+    if (res.status === 401) result.needsPasscode = true;
+    else if (!res.ok && !result.error) result.error = "Something went wrong (HTTP " + res.status + ").";
+  } catch {
+    result = { error: "Couldn't reach the chat server. Check your internet, or the address in CHAT_API_URL." };
+  }
+  if (run !== chatRun) return; // the chat was closed or reopened meanwhile
+  setChatBusy(false);
+
+  if (result.needsPasscode) {
+    savePasscode("");
+    askPasscode("That passcode didn't work. Try again.");
+    return;
+  }
+  if (result.error) {
+    addNotice(result.error);
+    return;
+  }
+
+  chatHistory.push({ role: "assistant", text: result.reply });
+  addMessage("ai", result.reply);
+  for (const raw of result.suggestions || []) {
+    const fit = toSuggestion(raw);
+    if (fit) suggestionBox(fit.s, fit.goal);
   }
 }
+
+function openChat(fromGoal) {
+  const dialog = document.getElementById("chat");
+  chatRun++;
+  chatHistory = [];
+  chatArea = fromGoal.area;
+
+  document.getElementById("chat-title").textContent = "Talk it through: " + fromGoal.area;
+  document.getElementById("chat-note").textContent = "Chat with Claude about this goal. Suggestions only change the page after you accept them.";
+  document.getElementById("chat-messages").replaceChildren();
+  addMessage("ai", "What's on your mind about " + fromGoal.area.toLowerCase() + "?");
+  setChatBusy(false);
+  if (!dialog.open) dialog.showModal();
+  document.getElementById("chat-form").elements.text.focus();
+}
+
+document.getElementById("chat-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = event.target.elements.text;
+  const text = input.value.trim();
+  if (!text || input.disabled) return;
+  input.value = "";
+
+  // If the last try failed, Asher's message is still the last turn: replace it.
+  if (chatHistory.at(-1)?.role === "user") chatHistory.pop();
+  chatHistory.push({ role: "user", text });
+  addMessage("me", text);
+  sendChat();
+});
 
 document.getElementById("chat-close").addEventListener("click", () => {
   chatRun++;
   document.getElementById("chat").close();
 });
+document.getElementById("chat").addEventListener("close", () => { chatRun++; });
 
 // ---------- start ----------
 
