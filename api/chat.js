@@ -1,145 +1,115 @@
-// The "Talk it through" chat's server piece. It runs on Vercel as a serverless
-// function, so the Anthropic API key stays on the server and never reaches the
-// browser (anyone can read browser code on a public site).
+// The chat. You type something like "add a todo for getting groceries", Claude
+// answers and, when you ask for a change, uses its tools (lib/chat.js) to add
+// or change your goals and todos in the database.
 //
 // Settings, all set in Vercel under Project > Settings > Environment Variables:
-//   ANTHROPIC_API_KEY  the key from console.anthropic.com (required)
-//   CHAT_PASSCODE      a passcode you type once in the chat, so strangers who
-//                      find this URL can't spend your API credit (required)
-//   ALLOWED_ORIGIN     the site allowed to call this, default the GitHub Pages site
+//   ANTHROPIC_API_KEY    the key from console.anthropic.com (required)
+//   DATABASE_URL         see lib/db.js (required)
+//   CHAT_PASSCODE        the invite code for making an account (see api/signup.js)
+//   DAILY_MESSAGE_LIMIT  messages each person can send per day, default 60
 
 import Anthropic from "@anthropic-ai/sdk";
-import { timingSafeEqual } from "node:crypto";
+import { sql, loadState } from "../lib/db.js";
+import { route, body } from "../lib/http.js";
+import { TOOLS, runTool, recentMessages } from "../lib/chat.js";
 
-// Claude Haiku 5.5: small, fast and very cheap (about $0.0005 a message here).
+// Claude Haiku 5.5: small, fast and very cheap (well under a cent a message).
 // For a smarter but pricier coach, use "claude-opus-5-5".
 const MODEL = "claude-haiku-5-5";
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "https://flashdw.github.io";
-
-// Limits that keep one request small and cheap.
-const MAX_TURNS = 30;
 const MAX_TEXT = 2000;
-const MAX_DATA = 20000;
+const HISTORY = 20; // how many earlier messages Claude sees
+const MAX_ROUNDS = 6; // tool-use rounds per message, so one message can't loop forever
+const DAILY_LIMIT = Number(process.env.DAILY_MESSAGE_LIMIT) || 60;
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY
 
-const SYSTEM = `You are the coach inside Asher's personal goals dashboard. Asher is a high school student. Talk like a friendly, practical older friend: short replies (two to four sentences), plain words, no lists unless asked, and end with at most one question.
+const SYSTEM = `You are the assistant inside a personal goals app. The person chatting is usually a high school student. You keep their goals and todos for them: when they ask to add, change, tick off or remove something, do it with your tools right away, then confirm in one short sentence. Don't ask for permission first for small changes; do ask before deleting a goal.
 
-Help Asher think through the goal area they opened the chat from. You can see the whole dashboard (goals, the Next up list, the log, and things already tried) as JSON in the first message. Use it to give specific advice, not generic tips.
+Goals are bigger things worked toward over weeks or months (optionally with a target number and a date). Todos are single concrete tasks. Link a todo to a goal with goal_id when it clearly belongs to one. "I did X" or "finished X" usually means ticking off a matching todo (done: true) or adding progress to a goal.
 
-When a concrete change to the dashboard would help, offer it as a suggestion. Asher sees it with Accept, Edit and Skip buttons, so mention it in your reply in one short sentence ("Want me to add that to Next up?") rather than repeating the details. Offer at most one suggestion per reply, and only when it clearly helps. Kinds of suggestion:
-- field "next": add a task to Next up. "value" is the task, written as a short action. "time" is a rough length like "15 min" or "an afternoon".
-- field "due": change a goal's target date. "value" is a date as YYYY-MM-DD. "time" is "".
-- field "target": change a goal's target number. "value" is the number, like "4". "time" is "". Only for goals that have a target.
-"goal" is the id of the goal the suggestion is for, copied exactly from the data.
+You can also help them think: break a goal into todos, plan a week, or pick what to do next. Talk like a friendly, practical older friend: short replies (one to three sentences), plain words, no lists unless asked, at most one question.
 
-Lift weights and reps live in another app (Hevy). The dashboard only tracks that a workout happened, so don't suggest logging lift numbers here.`;
+The current goals and todos, with their ids, come as JSON at the top of the latest message. Use the ids exactly as given. Never mention ids, JSON or tool names to the person. Today's date is in that message too; turn "Friday" or "next week" into real YYYY-MM-DD dates.`;
 
-// The answer always comes back as JSON in this shape.
-const REPLY_FORMAT = {
-  type: "json_schema",
-  schema: {
-    type: "object",
-    properties: {
-      reply: { type: "string" },
-      suggestions: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            goal: { type: "string" },
-            field: { type: "string", enum: ["next", "due", "target"] },
-            value: { type: "string" },
-            time: { type: "string" },
-          },
-          required: ["goal", "field", "value", "time"],
-          additionalProperties: false,
-        },
-      },
-    },
-    required: ["reply", "suggestions"],
-    additionalProperties: false,
-  },
-};
-
-function passcodeOk(given) {
-  const expected = process.env.CHAT_PASSCODE;
-  if (!expected || typeof given !== "string") return false;
-  const a = Buffer.from(given);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+function contextNote(user, state) {
+  const today = new Date().toISOString().slice(0, 10);
+  const weekday = new Date().toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
+  return `[Today is ${weekday} ${today}. You're talking with ${user.name}. Their goals and todos right now:\n${JSON.stringify(state)}]\n\n`;
 }
 
-// Checks what the browser sent and turns it into the messages Claude reads.
-function buildMessages(body) {
-  const { area, dashboard, history } = body || {};
-  if (typeof area !== "string" || !Array.isArray(history)) return null;
-  if (history.length === 0 || history.length > MAX_TURNS) return null;
-
-  const turns = [];
-  for (const [i, turn] of history.entries()) {
-    const role = i % 2 === 0 ? "user" : "assistant"; // turns alternate, starting with Asher
-    if (turn?.role !== role || typeof turn.text !== "string") return null;
-    const text = turn.text.trim().slice(0, MAX_TEXT);
-    if (!text) return null;
-    turns.push({ role, content: text });
-  }
-  if (turns.at(-1).role !== "user") return null;
-
-  const data = JSON.stringify(dashboard ?? {}).slice(0, MAX_DATA);
-  const context =
-    `Today is ${new Date().toISOString().slice(0, 10)}. Asher opened the chat from the "${area.slice(0, 100)}" area.\n\n` +
-    `The dashboard right now:\n${data}\n\n---\n\n`;
-  turns[0] = { role: "user", content: context + turns[0].content };
+// Earlier chat as Claude messages. Must start with the person speaking.
+function history(rows) {
+  const turns = rows.map((r) => ({ role: r.role, content: r.text }));
+  while (turns.length && turns[0].role !== "user") turns.shift();
   return turns;
 }
 
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Chat-Passcode");
-  res.setHeader("Vary", "Origin");
-
-  if (req.method === "OPTIONS") return res.status(204).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Use POST." });
-
-  if (!process.env.ANTHROPIC_API_KEY || !process.env.CHAT_PASSCODE) {
-    return res.status(500).json({ error: "The chat server isn't set up yet: ANTHROPIC_API_KEY and CHAT_PASSCODE need to be set in Vercel." });
+export default route(["POST"], async (req, res, user) => {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: "The chat isn't set up yet: ANTHROPIC_API_KEY needs to be set in Vercel." });
   }
-  if (!passcodeOk(req.headers["x-chat-passcode"])) {
-    return res.status(401).json({ error: "Wrong passcode." });
+  const text = typeof body(req).text === "string" ? body(req).text.trim().slice(0, MAX_TEXT) : "";
+  if (!text) return res.status(400).json({ error: "Type a message first." });
+
+  const [{ count }] = await sql`
+    select count(*)::int as count from messages
+    where user_id = ${user.id} and role = 'user' and created_at > now() - interval '1 day'`;
+  if (count >= DAILY_LIMIT) {
+    return res.status(429).json({ error: `That's ${DAILY_LIMIT} messages today, the daily limit. Try again tomorrow.` });
   }
 
-  const messages = buildMessages(req.body);
-  if (!messages) return res.status(400).json({ error: "That message didn't look right. Try again." });
+  const earlier = await recentMessages(user.id, HISTORY);
+  await sql`insert into messages (user_id, role, text) values (${user.id}, 'user', ${text})`;
+
+  const messages = [
+    ...history(earlier),
+    { role: "user", content: contextNote(user, await loadState(user.id)) + text },
+  ];
+  const changes = [];
+  let reply = "";
 
   try {
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 8000,
-      thinking: { type: "adaptive" },
-      output_config: { effort: "low", format: REPLY_FORMAT },
-      system: SYSTEM,
-      messages,
-    });
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const response = await client.messages.create({
+        model: MODEL,
+        max_tokens: 8000,
+        thinking: { type: "adaptive" },
+        output_config: { effort: "low" },
+        system: SYSTEM,
+        tools: TOOLS,
+        messages,
+      });
 
-    if (response.stop_reason === "refusal") {
-      return res.status(200).json({ reply: "I can't help with that one. Want to talk about something else on this goal?", suggestions: [] });
+      if (response.stop_reason === "refusal") {
+        reply = "I can't help with that one. Want to work on one of your goals instead?";
+        break;
+      }
+      reply = response.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim() || reply;
+      if (response.stop_reason !== "tool_use") break;
+
+      messages.push({ role: "assistant", content: response.content });
+      const results = [];
+      for (const block of response.content) {
+        if (block.type !== "tool_use") continue;
+        const { result, change, error } = await runTool(user.id, block.name, block.input);
+        if (change) changes.push(change);
+        results.push({ type: "tool_result", tool_use_id: block.id, content: result, ...(error && { is_error: true }) });
+      }
+      messages.push({ role: "user", content: results });
     }
-    const text = response.content.find((b) => b.type === "text")?.text;
-    const parsed = text && JSON.parse(text);
-    if (!parsed || typeof parsed.reply !== "string") throw new Error("Unexpected reply: " + response.stop_reason);
-
-    return res.status(200).json({ reply: parsed.reply, suggestions: parsed.suggestions ?? [] });
   } catch (err) {
     if (err instanceof Anthropic.AuthenticationError) {
       console.error("Anthropic rejected the API key");
-      return res.status(500).json({ error: "The API key in Vercel isn't working. Check ANTHROPIC_API_KEY." });
+      return res.status(500).json({ error: "The API key in Vercel isn't working. Check ANTHROPIC_API_KEY.", changes, ...(await loadState(user.id)) });
     }
     if (err instanceof Anthropic.RateLimitError) {
-      return res.status(429).json({ error: "Too many messages at once. Wait a minute and try again." });
+      return res.status(429).json({ error: "Too many messages at once. Wait a minute and try again.", changes, ...(await loadState(user.id)) });
     }
     console.error(err);
-    return res.status(502).json({ error: "Claude didn't answer this time. Try again in a moment." });
+    return res.status(502).json({ error: "Claude didn't answer this time. Try again in a moment.", changes, ...(await loadState(user.id)) });
   }
-}
+
+  if (!reply) reply = changes.length ? "Done." : "Sorry, I lost my train of thought. Can you say that again?";
+  await sql`insert into messages (user_id, role, text) values (${user.id}, 'assistant', ${reply})`;
+  return res.status(200).json({ reply, changes, ...(await loadState(user.id)) });
+}, { auth: true });

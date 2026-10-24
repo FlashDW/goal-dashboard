@@ -3,52 +3,69 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Asher's goals</title>
+  <title>My goals</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="page-header">
-    <h1>Asher's goals</h1>
-    <p class="subtitle">Changes you click here reset when you reload. To keep a change, edit data.json.</p>
-  </header>
+  <!-- Shown when nobody is logged in -->
+  <section id="auth" class="auth" hidden>
+    <div class="auth-card">
+      <h1>My goals</h1>
+      <p class="muted">Chat with an AI that keeps your goals and todos for you.</p>
 
-  <main>
-    <section id="next-up" aria-labelledby="next-title">
-      <h2 id="next-title">Next up</h2>
-      <p class="hint">Bored? Start at the top.</p>
-      <ol id="next-list" class="next-list"></ol>
-    </section>
-
-    <section aria-labelledby="goals-title">
-      <h2 id="goals-title">Goals</h2>
-      <div id="goal-cards" class="cards"></div>
-    </section>
-
-    <section aria-labelledby="log-title">
-      <h2 id="log-title">Log</h2>
-      <ul id="log-list" class="log-list"></ul>
-    </section>
-
-    <section aria-labelledby="tried-title">
-      <h2 id="tried-title">Tried</h2>
-      <ul id="tried-list" class="tried-list"></ul>
-    </section>
-  </main>
-
-  <dialog id="chat" class="chat">
-    <div class="chat-head">
-      <div>
-        <h2 id="chat-title">Talk it through</h2>
-        <p class="hint" id="chat-note"></p>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tab-login" aria-selected="true">Log in</button>
+        <button type="button" role="tab" id="tab-signup" aria-selected="false">Make an account</button>
       </div>
-      <button type="button" class="icon-btn" id="chat-close" aria-label="Close chat">✕</button>
+
+      <form id="auth-form" class="auth-form">
+        <label>Name
+          <input name="name" type="text" autocomplete="username" required maxlength="40">
+        </label>
+        <label>Password
+          <input name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="200">
+        </label>
+        <label class="signup-only" hidden>Invite code
+          <input name="invite" type="password" autocomplete="off">
+          <span class="hint">Ask whoever set up the app. It keeps strangers from using the AI.</span>
+        </label>
+        <p id="auth-error" class="error" role="alert" hidden></p>
+        <button type="submit" class="btn" id="auth-submit">Log in</button>
+      </form>
     </div>
-    <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
-    <form id="chat-form" class="chat-form">
-      <input name="text" type="text" aria-label="Your message" placeholder="Type a message" autocomplete="off" maxlength="2000">
-      <button name="send" type="submit" class="btn small">Send</button>
-    </form>
-  </dialog>
+  </section>
+
+  <!-- Shown when logged in -->
+  <div id="app" class="app" hidden>
+    <header class="topbar">
+      <h1>My goals</h1>
+      <div class="who">
+        <span id="who-name" class="muted"></span>
+        <button type="button" class="btn ghost small" id="logout">Log out</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="chat" aria-label="Chat">
+        <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+        <form id="chat-form" class="chat-form">
+          <input name="text" type="text" aria-label="Your message" placeholder="Try: add a todo for getting groceries" autocomplete="off" maxlength="2000">
+          <button name="send" type="submit" class="btn">Send</button>
+        </form>
+      </section>
+
+      <aside class="lists">
+        <section aria-labelledby="todos-title">
+          <h2 id="todos-title">Todos</h2>
+          <ul id="todo-list" class="todo-list"></ul>
+        </section>
+        <section aria-labelledby="goals-title">
+          <h2 id="goals-title">Goals</h2>
+          <ul id="goal-list" class="goal-list"></ul>
+        </section>
+      </aside>
+    </main>
+  </div>
 
   <script src="app.js"></script>
 </body>
