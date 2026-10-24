@@ -141,7 +141,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 
 /* ---------- logged in ---------- */
 
-.app { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+.app { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
 
 .topbar {
   display: flex;
@@ -153,26 +153,152 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Laptop: dashboard on the left, chat on the right. */
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 380px;
   gap: 20px;
   align-items: start;
   padding-bottom: 24px;
 }
+.dash { display: grid; gap: 16px; min-width: 0; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.card-head h2 { margin: 0; }
+.section-title { margin: 4px 2px 10px; }
+.small { font-size: 0.8rem; }
+.empty { color: var(--muted); font-size: 0.9rem; }
+.meta { display: block; color: var(--muted); font-size: 0.8rem; }
+.meta.late { color: var(--error); }
+
+.link-btn {
+  font: inherit;
+  font-size: 0.85rem;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  padding: 6px 0 0;
+  cursor: pointer;
+}
+.link-btn:hover { text-decoration: underline; }
+.btn.danger { color: var(--error); border-color: var(--error); }
+
+/* ---------- start from my plan ---------- */
+
+.start { display: grid; gap: 10px; border-color: var(--accent); }
+.start h2 { margin: 0; }
+.start-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Next up ---------- */
+
+.next-list { list-style: none; margin: 0; padding: 0; counter-reset: next; }
+.next-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  transition: opacity 0.25s;
+}
+.next-item:last-child { border-bottom: 0; }
+.next-item.leaving { opacity: 0.35; }
+.next-item input[type="checkbox"] { width: 22px; height: 22px; margin: 0; accent-color: var(--done); cursor: pointer; }
+.next-body { overflow-wrap: anywhere; }
+.next-item:first-child .next-text { font-weight: 600; }
+.time {
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.item-menu { grid-column: 2 / -1; display: none; gap: 6px; flex-wrap: wrap; padding-top: 8px; }
+.next-item.menu-open .item-menu { display: flex; }
+
+/* ---------- This week ---------- */
+
+.week { display: grid; gap: 16px; }
+.week-goal { display: grid; gap: 10px; }
+.week-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.week-count { font-size: 1.05rem; }
+.week-count strong { font-size: 1.6rem; line-height: 1; }
+.streak { font-size: 0.8rem; color: var(--muted); white-space: nowrap; padding-top: 4px; }
+.streak.on { color: var(--done); font-weight: 600; }
+.dots { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; max-width: 340px; }
+.dot {
+  aspect-ratio: 1;
+  max-width: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--track);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.dot.hit { background: var(--done); color: #fff; }
+.dot.today { box-shadow: 0 0 0 2px var(--accent); }
+.week-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- goal cards ---------- */
+
+.goal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.goal-grid > .empty { grid-column: 1 / -1; margin: 0; }
+.goal-card { display: flex; flex-direction: column; gap: 8px; }
+.goal-card.done { opacity: 0.7; }
+.goal-area { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.goal-title { margin: 0; font-size: 1.02rem; overflow-wrap: anywhere; }
+.goal-card.done .goal-title { color: var(--done); }
+.goal-status { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); }
+.done-text { color: var(--done); }
+.bar { height: 6px; margin-top: 6px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--done); border-radius: inherit; }
+.steps { margin: 6px 0 0; padding-left: 20px; font-size: 0.85rem; color: var(--muted); display: grid; gap: 2px; }
+.steps li.done { text-decoration: line-through; }
+.steps li.current { color: var(--text); font-weight: 600; }
+.goal-next { font-size: 0.88rem; display: flex; gap: 8px; overflow-wrap: anywhere; }
+.goal-next .label, .goal-log .label { flex: none; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+.goal-log { list-style: none; margin: 0; padding: 8px 0 0; border-top: 1px solid var(--border); font-size: 0.82rem; display: grid; gap: 2px; }
+.talk { align-self: flex-start; margin-top: auto; }
+
+/* ---------- Log and Tried ---------- */
+
+.log-list, .tried-list { padding-top: 12px; }
+.log-day { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 12px 0 4px; }
+.log-day:first-child { margin-top: 0; }
+.log-list ul, .tried-list { list-style: none; margin: 0; padding-left: 0; }
+.log-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; }
+.log-text { overflow-wrap: anywhere; }
+.tried-list li:not(.empty) { padding: 8px 0; border-bottom: 1px solid var(--border); }
+.tried-list li:last-child { border-bottom: 0; }
+.tried-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.tried-name { font-weight: 600; overflow-wrap: anywhere; }
+.pill { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--track); color: var(--muted); }
+.pill.keeping { background: color-mix(in srgb, var(--done) 18%, transparent); color: var(--done); }
+.pill.done { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
 
 /* ---------- chat ---------- */
 
 .chat {
+  position: sticky;
+  top: 16px;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 100px);
+  height: calc(100vh - 32px);
+  height: calc(100dvh - 32px);
   min-height: 420px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
 }
+.chat-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+.chat-head h2 { margin: 0; }
+.chat-close { display: none; }
 
 .chat-messages {
   flex: 1;
@@ -183,9 +309,21 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   gap: 10px;
 }
 
-.chat-empty { margin: auto; max-width: 380px; text-align: center; display: grid; gap: 8px; }
+.chat-empty { margin: auto 0; display: grid; gap: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--accent); }
 
-.msg { max-width: 85%; padding: 10px 12px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; animation: pop 0.2s ease-out; }
+.msg { max-width: 88%; padding: 10px 12px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; animation: pop 0.2s ease-out; }
 .msg.me { align-self: flex-end; background: var(--accent); color: var(--accent-text); border-bottom-right-radius: 4px; }
 .msg.ai { align-self: flex-start; background: var(--bg); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 .msg.error { color: var(--error); }
@@ -201,30 +339,96 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 
 @keyframes pop { from { opacity: 0; transform: translateY(4px); } }
 
-/* ---------- todos and goals ---------- */
+/* The phone-only bar that opens the chat. */
+.chat-bar { display: none; }
 
-.lists { display: grid; gap: 20px; }
-.lists section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
-.todo-list, .goal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.empty { color: var(--muted); font-size: 0.9rem; }
-.meta { display: block; color: var(--muted); font-size: 0.8rem; }
-.meta.late { color: var(--error); }
+/* ---------- Undo bar ---------- */
 
-.todo-list li:not(.empty) { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; }
-.todo-list input[type="checkbox"] { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--done); flex: none; }
-.todo-body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.todo-list li.done .todo-text { color: var(--muted); text-decoration: line-through; }
+.toast {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 20px;
+  margin: 0 auto;
+  width: fit-content;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.9rem;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.2);
+  animation: pop 0.2s ease-out;
+}
+.toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toast .link-btn { padding: 0; color: var(--bg); font-weight: 700; text-decoration: underline; flex: none; }
 
-.goal-list li:not(.empty) { padding: 8px 0; border-bottom: 1px solid var(--border); }
-.goal-list li:last-child { border-bottom: 0; }
-.goal-title { font-weight: 600; overflow-wrap: anywhere; }
-.goal-list li.done .goal-title { color: var(--done); }
-.bar { height: 6px; margin-top: 6px; border-radius: 999px; background: var(--track); overflow: hidden; }
-.bar span { display: block; height: 100%; background: var(--done); border-radius: inherit; }
+@media (prefers-reduced-motion: reduce) {
+  .msg, .toast { animation: none; }
+}
 
-/* ---------- phone width ---------- */
+/* ---------- phone and tablet width ---------- */
 
-@media (max-width: 760px) {
-  .layout { grid-template-columns: 1fr; }
-  .chat { height: 70vh; min-height: 360px; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; padding-bottom: 96px; }
+  .goal-grid { grid-template-columns: 1fr; }
+
+  /* The chat becomes a full-screen sheet, opened from the bar at the bottom. */
+  .chat {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    height: auto;
+    min-height: 0;
+    border-radius: 0;
+    border: 0;
+  }
+  .chat.open { display: flex; }
+  .chat-close { display: block; width: 40px; height: 40px; font-size: 1rem; }
+  body.chat-open { overflow: hidden; }
+  body.chat-open .chat-bar { display: none; }
+
+  .chat-bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font: inherit;
+    text-align: left;
+    padding: 8px 8px 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    box-shadow: 0 6px 24px rgb(0 0 0 / 0.12);
+    cursor: pointer;
+  }
+  .chat-bar-send {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-text);
+    font-weight: 700;
+  }
+  .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+  /* Give task names the full width; the time sits under them. */
+  .next-item { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .next-item .time { grid-column: 2; grid-row: 2; justify-self: start; margin-top: 4px; }
+  .next-item .icon-btn { grid-column: 3; grid-row: 1; }
+  .item-menu { grid-column: 2 / -1; grid-row: 3; }
+  .icon-btn { width: 36px; height: 36px; }
 }

@@ -1,6 +1,6 @@
-// The chat. You type something like "add a todo for getting groceries", Claude
-// answers and, when you ask for a change, uses its tools (lib/chat.js) to add
-// or change your goals and todos in the database.
+// The chat. You type something like "did push day", Claude answers and, when
+// something changed, uses its tools (lib/chat.js) to update your goals, Next
+// up, Log and Tried list in the database.
 //
 // Settings, all set in Vercel under Project > Settings > Environment Variables:
 //   ANTHROPIC_API_KEY    the key from console.anthropic.com (required)
@@ -28,17 +28,28 @@ const TOTAL_LIMIT = Number(process.env.TOTAL_DAILY_LIMIT) || 200;
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY
 
-const SYSTEM = `You are the assistant inside a personal goals app. The person chatting is usually a high school student. You keep their goals and todos for them: when they ask to add, change, tick off or remove something, do it with your tools right away, then confirm in one short sentence. Don't ask for permission first for small changes; do ask before deleting a goal.
+const SYSTEM = `You are the coach inside a personal goals app. The person chatting is usually a high school student. The app shows a dashboard beside this chat, and you keep it up to date with your tools:
+- Goals: bigger things worked toward over weeks or months. Kinds: count (reach a number by a date), steps (a few steps in order) and weekly (a habit, like 5 workouts a week, counted from the Log).
+- Next up: one ordered list of concrete tasks across every goal, each with a time estimate. The top is what to do first. When the person is bored they start at the top.
+- Log: what they did. Ticking a Next up task puts it in the Log; add_log writes other things they did.
+- Tried: activities, clubs or ideas they tried, marked done, keeping or ruled out, with one line on why.
 
-Goals are bigger things worked toward over weeks or months (optionally with a target number and a date). Todos are single concrete tasks. Link a todo to a goal with goal_id when it clearly belongs to one. "I did X" or "finished X" usually means ticking off a matching todo (done: true) or adding progress to a goal.
+When they tell you something happened or ask for a change, do it with your tools right away, then confirm in one short sentence. For example "did push day" means add_log "Push day" linked to the weekly workout goal (and tick a matching Next up task if there is one). "I finished X" means ticking the matching task or adding progress to a goal. "Move X to the top" means update_todo with place "top". Give every new task a rough time ("10 min", "2 hours", "an afternoon"). Link tasks and log lines to a goal with goal_id when they clearly belong to one. Every change gets an Undo button, so don't ask permission for small changes. Do ask first before deleting a goal or changing a goal's target or date.
 
-You can also help them think: break a goal into todos, plan a week, or pick what to do next. Talk like a friendly, practical older friend: short replies (one to three sentences), plain words, no lists unless asked, at most one question.
+You also help them think: break a goal into tasks, plan a week, or pick what to do next. Talk like a friendly, practical older friend: short replies (one to three sentences), plain words, no lists unless asked, at most one question. Never give medical or diet advice beyond "ask a coach or doctor."
 
-The current goals and todos, with their ids, come as JSON at the top of the latest message. Use the ids exactly as given. Never mention ids, JSON or tool names to the person. Today's date is in that message too; turn "Friday" or "next week" into real YYYY-MM-DD dates.`;
+The current dashboard, with ids, comes as JSON at the top of the latest message. Use the ids exactly as given. Never mention ids, JSON or tool names to the person. Today's date is in that message too; turn "Friday" or "next week" into real YYYY-MM-DD dates.`;
+
+// What Claude sees of the dashboard: everything except older Log lines, to keep
+// each message small (and cheap).
+async function dashboardFor(userId) {
+  const state = await loadState(userId);
+  return { ...state, log: state.log.slice(0, 30) };
+}
 
 function contextNote(user, state, today) {
   const weekday = new Date(today + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
-  return `[Today is ${weekday} ${today}. You're talking with ${user.name}. Their goals and todos right now:\n${JSON.stringify(state)}]\n\n`;
+  return `[Today is ${weekday} ${today}. You're talking with ${user.name}. Their dashboard right now:\n${JSON.stringify(state)}]\n\n`;
 }
 
 // Earlier chat as Claude messages. Must start with the person speaking.
@@ -71,9 +82,10 @@ export default route(["POST"], async (req, res, user) => {
   const earlier = await recentMessages(user.id, HISTORY);
   await sql`insert into messages (user_id, role, text) values (${user.id}, 'user', ${text})`;
 
+  const today = localToday(body(req).today);
   const messages = [
     ...history(earlier),
-    { role: "user", content: contextNote(user, await loadState(user.id), localToday(body(req).today)) + text },
+    { role: "user", content: contextNote(user, await dashboardFor(user.id), today) + text },
   ];
   const turn = randomUUID(); // tags this reply's changes so they can be undone together
   const changes = [];
@@ -103,7 +115,7 @@ export default route(["POST"], async (req, res, user) => {
       const results = [];
       for (const block of response.content) {
         if (block.type !== "tool_use") continue;
-        const { result, change, error } = await runTool(user.id, block.name, block.input, turn);
+        const { result, change, error } = await runTool(user.id, block.name, block.input, turn, today);
         if (change) changes.push(change);
         results.push({ type: "tool_result", tool_use_id: block.id, content: result, ...(error && { is_error: true }) });
       }

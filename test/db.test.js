@@ -79,7 +79,100 @@ test("one person's AI can't see or change another person's goals", opts, async (
   assert.equal(edit.error, true);
   assert.equal(del.error, true);
   assert.equal(link.error, true);
+  const line = await runTool(asher, "add_log", { text: "Private log" }, "t3");
+  const item = await runTool(asher, "add_tried", { name: "Private club", status: "keeping" }, "t3");
+  const todo = await runTool(asher, "add_todo", { text: "Private task" }, "t3");
+  assert.equal((await runTool(friend, "delete_log", { log_id: line.id }, "t4")).error, true);
+  assert.equal((await runTool(friend, "update_tried", { tried_id: item.id, status: "done" }, "t4")).error, true);
+  assert.equal((await runTool(friend, "update_todo", { todo_id: todo.id, place: "top" }, "t4")).error, true);
+  const mineToo = await runTool(friend, "add_todo", { text: "Friend task" }, "t4");
+  assert.equal((await runTool(friend, "update_todo", { todo_id: mineToo.id, before_todo_id: todo.id }, "t4")).error, true);
+  await undoTurn(friend, "t4");
   assert.deepEqual(await undoTurn(friend, "t3"), [], "can't undo someone else's reply");
   assert.ok((await loadState(asher)).goals.some((g) => g.id === mine.id && g.title === "Private goal"));
+  const friendState = await loadState(friend);
+  assert.deepEqual([friendState.goals, friendState.todos, friendState.log, friendState.tried], [[], [], [], []]);
+});
+
+test("Next up keeps the person's order: add at the top, move above another", opts, async () => {
+  const add = async (text, extra = {}) => (await runTool(asher, "add_todo", { text, ...extra }, "order")).id;
+  const a = await add("A");
+  const b = await add("B");
+  const c = await add("C", { place: "top", time: "10 min" });
+  const order = async () => (await loadState(asher)).todos.filter((t) => [a, b, c].includes(t.id)).map((t) => t.text);
+  assert.deepEqual(await order(), ["C", "A", "B"]);
+  assert.equal((await loadState(asher)).todos.find((t) => t.id === c).time, "10 min");
+
+  await runTool(asher, "update_todo", { todo_id: b, before_todo_id: a }, "move");
+  assert.deepEqual(await order(), ["C", "B", "A"]);
+  await undoTurn(asher, "move");
+  assert.deepEqual(await order(), ["C", "A", "B"]);
+});
+
+test("ticking a task moves it to the Log with the person's date, and undo puts it back", opts, async () => {
+  const id = (await runTool(asher, "add_todo", { text: "Pick a recipe" }, "tick-setup")).id;
+  await runTool(asher, "update_todo", { todo_id: id, done: true }, "tick", "2026-10-24");
+  let state = await loadState(asher);
+  assert.ok(!state.todos.some((t) => t.id === id));
+  assert.deepEqual(
+    state.log.find((l) => l.source === "todo" && l.id === id),
+    { source: "todo", id, goal_id: null, text: "Pick a recipe", date: "2026-10-24" },
+  );
+  await undoTurn(asher, "tick");
+  state = await loadState(asher);
+  assert.ok(state.todos.some((t) => t.id === id));
+  assert.ok(!state.log.some((l) => l.source === "todo" && l.id === id));
+});
+
+test("log lines, weekly goals, steps goals and the Tried list, all undoable", opts, async () => {
+  const turn = "dashboard";
+  const fit = await runTool(asher, "add_goal", { title: "Work out", kind: "weekly", target: 5, unit: "workouts" }, turn);
+  const job = await runTool(asher, "add_goal", { title: "Barista", kind: "steps", steps: ["Permit", "Apply", "Start"] }, turn);
+  const line = await runTool(asher, "add_log", { text: "Push day", goal_id: fit.id }, turn, "2026-10-24");
+  const tried = await runTool(asher, "add_tried", { name: "Steel Dragons", status: "ruled out", why: "Too far" }, turn, "2026-10-24");
+  assert.deepEqual([fit, job, line, tried].map((r) => r.error ?? false), [false, false, false, false]);
+
+  let state = await loadState(asher);
+  assert.equal(state.goals.find((g) => g.id === fit.id).kind, "weekly");
+  assert.deepEqual(state.goals.find((g) => g.id === job.id).steps, ["Permit", "Apply", "Start"]);
+  assert.deepEqual(state.log[0], { source: "log", id: line.id, goal_id: fit.id, text: "Push day", date: "2026-10-24" });
+  assert.deepEqual(state.tried.find((t) => t.id === tried.id), { id: tried.id, name: "Steel Dragons", status: "ruled out", why: "Too far", date: "2026-10-24" });
+
+  assert.equal((await runTool(asher, "add_tried", { name: "x", status: "maybe" }, turn)).error, true);
+  assert.equal((await runTool(asher, "add_goal", { title: "x", kind: "daily" }, turn)).error, true);
+
+  // Editing steps and deleting a goal with log lines both come back on undo.
+  const snapshot = await loadState(asher);
+  await runTool(asher, "update_goal", { goal_id: job.id, steps: ["Permit", "Start"], progress: 1 }, "edit");
+  await runTool(asher, "update_tried", { tried_id: tried.id, status: "keeping" }, "edit");
+  await runTool(asher, "delete_goal", { goal_id: fit.id }, "edit");
+  await runTool(asher, "delete_log", { log_id: line.id }, "edit");
+  await undoTurn(asher, "edit");
+  assert.deepEqual(await loadState(asher), snapshot);
+
+  await undoTurn(asher, turn);
+  state = await loadState(asher);
+  assert.ok(!state.goals.some((g) => [fit.id, job.id].includes(g.id)));
+  assert.ok(!state.log.some((l) => l.source === "log" && l.id === line.id));
+  assert.ok(!state.tried.some((t) => t.id === tried.id));
+});
+
+test("Start from my plan adds plan.json in one undoable go", opts, async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { importPlan } = await import("../lib/plan.js");
+  const plan = JSON.parse(await readFile(new URL("../plan.json", import.meta.url), "utf8"));
+  const result = await importPlan(friend, plan, "plan", "2026-10-24");
+  assert.match(result.change, /^Added your plan: 6 goals and \d+ tasks$/);
+  const state = await loadState(friend);
+  assert.equal(state.goals.length, plan.goals.length);
+  assert.deepEqual(state.todos.map((t) => t.text), plan.next.map((t) => t.text), "kept in the plan's order");
+  const job = state.goals.find((g) => g.kind === "steps");
+  assert.ok(state.todos.some((t) => t.goal_id === job.id), "tasks are linked to their goals");
+
+  const bad = await importPlan(friend, { goals: [{ title: "ok" }, { title: "" }] }, "bad-plan", "2026-10-24");
+  assert.match(bad.error, /couldn't be added/);
+  assert.equal((await loadState(friend)).goals.length, plan.goals.length, "a bad plan adds nothing");
+
+  await undoTurn(friend, "plan");
   assert.equal((await loadState(friend)).goals.length, 0);
 });
