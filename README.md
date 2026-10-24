@@ -23,7 +23,8 @@ only until you reload the page.
 ## Real AI chat
 
 "Talk it through" sends your messages, plus what's on the dashboard right now,
-to Claude (model `claude-opus-5-5`). Claude answers and can suggest a change
+to Claude (model `claude-haiku-5-5`, which costs about a twentieth of a cent
+per message, so $5 of credit lasts thousands of chats). Claude answers and can suggest a change
 (a new Next up task, a new target date, a new target number) that you Accept,
 Edit or Skip.
 

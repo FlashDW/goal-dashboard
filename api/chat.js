@@ -11,7 +11,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { timingSafeEqual } from "node:crypto";
 
-const MODEL = "claude-opus-5-5";
+// Claude Haiku 5.5: small, fast and very cheap (about $0.0005 a message here).
+// For a smarter but pricier coach, use "claude-opus-5-5".
+const MODEL = "claude-haiku-5-5";
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "https://flashdw.github.io";
 
 // Limits that keep one request small and cheap.
@@ -112,14 +114,11 @@ export default async function handler(req, res) {
   if (!messages) return res.status(400).json({ error: "That message didn't look right. Try again." });
 
   try {
-    const response = await client.beta.messages.create({
+    const response = await client.messages.create({
       model: MODEL,
       max_tokens: 8000,
       thinking: { type: "adaptive" },
       output_config: { effort: "low", format: REPLY_FORMAT },
-      // If a safety check declines, the API retries on a suitable other model.
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
       system: SYSTEM,
       messages,
     });
